@@ -1679,7 +1679,6 @@ function saveEditedResponse(journey, stepId, value) {
 // INIT
 // ═══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  initSupabase();
   updateProjectCount();
   refreshDashboard();
   // Greet based on time
@@ -1777,11 +1776,18 @@ async function queueRenderJob() {
 var _origNavigate = navigate;
 navigate = function(page) {
   _origNavigate(page);
-  if (page === "pipeline" && !_pipelineLoaded) {
-    _pipelineLoaded = true;
-    loadPipelineJobs();
+  if (page === "pipeline") {
+    if (!_sb) initSupabase();
+    if (!_pipelineLoaded) { _pipelineLoaded = true; loadPipelineJobs(); }
   }
 };
+
+// Ensure Supabase connects on every load — belt + suspenders
+if (typeof supabase !== 'undefined' && window._supaKey) {
+  initSupabase();
+} else {
+  window.addEventListener('load', initSupabase);
+}
 </script>
 
 </body>
