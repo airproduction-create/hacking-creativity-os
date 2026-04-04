@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Hacking Creativity OS — South African Creative Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script>window._supaKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvc3NpZWVxcGdtdmZ1aWl3Y2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxODExMzgsImV4cCI6MjA4ODc1NzEzOH0.r8MTBLawzY_3QzuXTi121GRIX2_S-p2cqlygrVPz8B8";</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -39,6 +41,11 @@ a{text-decoration:none;color:inherit}
 .claude-project-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(79,70,229,.25);border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid rgba(79,70,229,.4)}
 .claude-project-btn:hover{background:rgba(79,70,229,.4)}
 .claude-project-btn .cpb-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 6px #4ade80}
+.sb-status{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.05);margin:0 6px 6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.5)}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#64748b;flex-shrink:0;transition:background .3s}
+.sb-dot.connected{background:#4ade80;box-shadow:0 0 5px #4ade80}
+.sb-dot.connecting{background:#f59e0b;animation:pulse-amber 1s infinite}
+@keyframes pulse-amber{0%,100%{opacity:1}50%{opacity:.4}}
 .claude-project-btn span{font-size:12px;font-weight:600;color:rgba(255,255,255,.9)}
 
 /* ── MAIN ── */
@@ -55,11 +62,13 @@ a{text-decoration:none;color:inherit}
 /* ── DASHBOARD ── */
 .dashboard-body{padding:28px 32px;flex:1}
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-.stat-card{background:var(--card);border-radius:14px;padding:18px 20px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-card{background:var(--card);border-radius:14px;padding:20px 22px;border:1px solid var(--border);box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .stat-card .stat-val{font-size:26px;font-weight:800;margin-bottom:2px}
 .stat-card .stat-label{font-size:12px;color:var(--muted);font-weight:500}
 .quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
-.qa-card{background:var(--card);border-radius:16px;padding:22px;border:1px solid var(--border);cursor:pointer;transition:all .2s;box-shadow:var(--shadow)}
+.qa-card{background:var(--card);border-radius:16px;padding:22px;border:1px solid var(--border);cursor:pointer;transition:all .2s;box-shadow:var(--shadow);border-left:3px solid transparent}
+.qa-card:hover{border-left-color:var(--indigo)}
 .qa-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--indigo)}
 .qa-card .qa-icon{font-size:28px;margin-bottom:14px}
 .qa-card .qa-title{font-size:15px;font-weight:700;margin-bottom:5px}
@@ -68,7 +77,10 @@ a{text-decoration:none;color:inherit}
 .section-heading{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
 .section-heading a{font-size:12px;font-weight:600;color:var(--indigo)}
 .projects-list{display:flex;flex-direction:column;gap:10px}
-.project-row{background:var(--card);border-radius:12px;padding:14px 18px;border:1px solid var(--border);display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.project-row{background:var(--card);border-radius:12px;padding:14px 18px;border:1px solid var(--border);display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);position:relative}
+.pr-del{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:1.5px solid transparent;border-radius:8px;padding:4px 7px;font-size:14px;cursor:pointer;opacity:0;transition:all .15s;z-index:5}
+.project-row:hover .pr-del{opacity:1}
+.pr-del:hover{background:#fff1f2;border-color:#fecdd3;color:#e11d48}
 .project-row:hover{border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-t)}
 .pr-type{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;font-weight:700}
 .pr-info{flex:1}
@@ -79,9 +91,12 @@ a{text-decoration:none;color:inherit}
 .pr-progress-bar{height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}
 .pr-progress-fill{height:4px;background:var(--indigo);border-radius:2px;transition:width .5s}
 .pr-progress-label{font-size:10px;color:var(--muted);text-align:right;margin-top:3px}
-.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
-.empty-state .es-icon{font-size:40px;margin-bottom:12px;opacity:.4}
-.empty-state p{font-size:14px}
+.empty-state{text-align:center;padding:56px 24px;color:var(--muted)}
+.empty-state .es-icon{font-size:48px;margin-bottom:14px;opacity:.5;display:block;animation:float 3s ease-in-out infinite}
+.empty-state p{font-size:14px;line-height:1.6}
+.empty-state .es-cta{margin-top:16px;display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--indigo);color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:background .15s}
+.empty-state .es-cta:hover{background:var(--indigo-d)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
 /* ── JOURNEY ── */
 .journey-layout{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden}
@@ -220,6 +235,11 @@ a{text-decoration:none;color:inherit}
 .brief-form-side{overflow-y:auto;padding:28px 32px;border-right:1px solid var(--border)}
 .brief-output-side{overflow-y:auto;padding:28px 28px;background:var(--bg)}
 
+/* ── LOADING SKELETON ── */
+.skeleton{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-row{height:60px;border-radius:12px;margin-bottom:10px}
+
 /* ── MISC ── */
 .divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 .text-muted{color:var(--muted)}
@@ -234,8 +254,12 @@ a{text-decoration:none;color:inherit}
 .rating-stars{display:flex;gap:4px}
 .star{font-size:20px;cursor:pointer;color:#d1d5db;transition:color .15s}
 .star.lit{color:#f59e0b}
-.notification{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;transform:translateY(80px);transition:transform .3s;box-shadow:var(--shadow-lg)}
-.notification.show{transform:translateY(0)}
+.notification{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;transform:translateY(80px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;max-width:340px}
+.notification.n-success{background:#059669}
+.notification.n-error{background:#dc2626}
+.notification.n-warning{background:#d97706}
+.notification.n-info{background:#2563eb}
+.notification.show{transform:translateY(0);opacity:1}
 .tab-bar{display:flex;gap:2px;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:20px;border:1px solid var(--border)}
 .tab{flex:1;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;border:none;background:transparent}
 .tab.active{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
@@ -249,6 +273,45 @@ a{text-decoration:none;color:inherit}
 .collapse-header{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600}
 .collapse-body{padding:0 16px 14px;font-size:13px;color:var(--muted);line-height:1.7;display:none}
 .collapse-body.open{display:block}
+
+/* ── PIPELINE MODULE ── */
+.pipeline-body{padding:28px 32px;flex:1}
+.env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.env-card{background:var(--card);border-radius:14px;padding:16px 18px;border:1.5px solid var(--border);box-shadow:var(--shadow);transition:all .15s}
+.env-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.env-card .ec-icon{font-size:24px;margin-bottom:10px}
+.env-card .ec-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.env-card .ec-val{font-size:13px;font-weight:700;font-family:'SF Mono','Fira Code',monospace}
+.env-card .ec-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-top:8px}
+.ec-ok{background:#dcfce7;color:#166534}.ec-warn{background:#fef3c7;color:#92400e}.ec-err{background:#fee2e2;color:#991b1b}
+.pipeline-two-col{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+.job-table{background:var(--card);border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow)}
+.job-table-header{display:grid;grid-template-columns:1fr 100px 80px 120px 40px;padding:10px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.job-row{display:grid;grid-template-columns:1fr 100px 80px 120px 40px;padding:13px 18px;border-bottom:1px solid var(--border);align-items:center;transition:background .1s;font-size:13px}
+.job-row:last-child{border-bottom:none}
+.job-row:hover{background:var(--bg)}
+.job-comp{font-weight:600}
+.job-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.job-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-align:center}
+.jb-queued{background:#f1f5f9;color:#475569}
+.jb-rendering{background:#dbeafe;color:#1e40af}
+.jb-done{background:#d1fae5;color:#065f46}
+.jb-failed{background:#fee2e2;color:#991b1b}
+.jb-davinci{background:#f3e8ff;color:#6b21a8}
+.jb-scripting,.jb-voicing{background:#fef9c3;color:#713f12}
+.pipeline-panel{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:20px;box-shadow:var(--shadow)}
+.pp-title{font-size:13px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.cmd-block{background:#0f172a;border-radius:10px;padding:14px 16px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;color:#94a3b8;line-height:1.8;margin-bottom:10px;white-space:pre}
+.cmd-block .cmd-comment{color:#475569}
+.cmd-block .cmd-key{color:#93c5fd}
+.cmd-block .cmd-val{color:#86efac}
+.pl-form-group{margin-bottom:12px}
+.pl-form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.pl-form-group input,.pl-form-group select{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border .2s}
+.pl-form-group input:focus,.pl-form-group select:focus{border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-t);background:var(--card)}
+.pipeline-empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.pipeline-empty .pe-icon{font-size:40px;opacity:.4;display:block;margin-bottom:12px}
+
 </style>
 </head>
 <body>
@@ -274,8 +337,13 @@ a{text-decoration:none;color:inherit}
   <div class="nav-item" onclick="startJourney('script')"><span class="nav-icon">✍️</span>Script Writing</div>
 
   <div class="sidebar-section">Active</div>
+    <div class="sidebar-section">Production</div>
+  <div class="nav-item" onclick="navigate('pipeline')"><span class="nav-icon">🎬</span>Video Pipeline</div>
+
+  <div class="sidebar-section">Active</div>
   <div id="sidebar-active-projects"></div>
 
+  <div id="sb-status-widget" class="sb-status"><span class="sb-dot" id="sb-dot"></span><span id="sb-status-text">Supabase</span></div>
   <div class="sidebar-bottom">
     <div class="claude-project-btn" onclick="openSetup()">
       <div class="cpb-dot"></div>
@@ -291,7 +359,7 @@ a{text-decoration:none;color:inherit}
   <div id="page-dashboard" class="page active">
     <div class="page-header">
       <div class="page-header-row">
-        <div><h1>Good morning 👋</h1><p>Your agency OS is running. What are we building today?</p></div>
+        <div><h1 id="greeting-h1">Good morning 👋</h1><p>Your agency OS is running. What are we building today?</p></div>
         <button class="btn btn-primary" onclick="openSetup()">⚙ Project Setup</button>
       </div>
     </div>
@@ -332,7 +400,7 @@ a{text-decoration:none;color:inherit}
       </div>
 
       <div class="section-heading">Recent Projects <a onclick="navigate('projects')">View all</a></div>
-      <div id="recent-projects-list"><div class="empty-state"><div class="es-icon">📂</div><p>No projects yet. Start one above to get going.</p></div></div>
+      <div id="recent-projects-list"><div class="empty-state"><span class="es-icon">📂</span><p>No projects yet. Start one above to get going.</p><button class="es-cta" onclick="startJourney('atl')">🎯 Start your first campaign</button></div></div>
     </div>
   </div>
 
@@ -449,6 +517,74 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
     <div style="padding:24px 32px"><div id="all-projects-list"></div></div>
+  </div>
+
+
+<!-- ═══ PIPELINE PAGE ═══ -->
+  <div id="page-pipeline" class="page">
+    <div class="page-header">
+      <div class="page-header-row">
+        <div><h1>🎬 Video Pipeline</h1><p>Automated render engine — Remotion · framer-motion · DaVinci Resolve</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary btn-sm" onclick="pipelineEnvCheck()">⚡ Check Environment</button>
+          <button class="btn btn-primary btn-sm" onclick="queueRenderJob()">+ Queue Render Job</button>
+        </div>
+      </div>
+    </div>
+    <div class="pipeline-body">
+      <div class="section-heading" style="margin-bottom:14px">Environment Status</div>
+      <div class="env-grid">
+        <div class="env-card"><div class="ec-icon">⬡</div><div class="ec-label">Node.js</div><div class="ec-val">v20.14.0</div><div class="ec-status ec-ok">✓ Ready</div></div>
+        <div class="env-card"><div class="ec-icon">🐍</div><div class="ec-label">Python</div><div class="ec-val">3.9.6</div><div class="ec-status ec-ok">✓ Ready</div></div>
+        <div class="env-card"><div class="ec-icon">🎞</div><div class="ec-label">ffmpeg</div><div class="ec-val" id="env-ffmpeg-val">Not installed</div><div class="ec-status ec-err" id="env-ffmpeg-status">⚠ Required</div></div>
+        <div class="env-card"><div class="ec-icon">🎨</div><div class="ec-label">DaVinci Resolve</div><div class="ec-val">Studio</div><div class="ec-status ec-ok">✓ Configured</div></div>
+      </div>
+      <div class="pipeline-two-col">
+        <div>
+          <div class="section-heading">Render Queue <a onclick="loadPipelineJobs()" style="cursor:pointer">↻ Refresh</a></div>
+          <div class="job-table">
+            <div class="job-table-header"><span>Composition</span><span>Status</span><span>Format</span><span>Created</span><span></span></div>
+            <div id="pipeline-jobs-list"><div class="pipeline-empty"><span class="pe-icon">🎬</span><p>No jobs yet. Queue a render job to get started.</p></div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="pipeline-panel">
+            <div class="pp-title">⚡ Quick Render</div>
+            <div class="pl-form-group"><label>Composition</label><select id="qr-composition"><option value="TestCard">TestCard (pipeline verify)</option></select></div>
+            <div class="pl-form-group"><label>Resolution</label><select id="qr-resolution"><option value="1920x1080">1920×1080 — 16:9 YouTube</option><option value="1080x1920">1080×1920 — 9:16 Reels</option><option value="1080x1080">1080×1080 — 1:1 LinkedIn</option></select></div>
+            <div class="pl-form-group"><label>Label</label><input type="text" id="qr-label" placeholder="e.g. Product launch teaser" /></div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="queueRenderJob()">Queue Render Job →</button>
+          </div>
+          <div class="pipeline-panel">
+            <div class="pp-title">📟 Setup Commands</div>
+            <div class="cmd-block"><span class="cmd-comment"># Install ffmpeg (required)</span>
+brew install ffmpeg
+
+<span class="cmd-comment"># Install pipeline</span>
+cd pipeline && npm install
+
+<span class="cmd-comment"># Verify stack</span>
+<span class="cmd-key">npm run check</span>
+
+<span class="cmd-comment"># First render</span>
+<span class="cmd-key">npm run render</span>
+
+<span class="cmd-comment"># Sync to DaVinci</span>
+<span class="cmd-key">python3 scripts/davinci/sync-timeline.py</span></div>
+          </div>
+          <div class="pipeline-panel">
+            <div class="pp-title">🔑 API Keys Status</div>
+            <div style="font-size:12px;color:var(--muted);line-height:2">
+              <div>🔲 Anthropic (script gen)</div>
+              <div>🔲 ElevenLabs (voiceover)</div>
+              <div>🔲 VideoDB (media intel)</div>
+              <div>✅ Supabase (live)</div>
+            </div>
+            <div style="margin-top:10px;font-size:11px;color:var(--muted)">Add keys to <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:11px">pipeline/.env</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div><!-- /main -->
@@ -1208,13 +1344,67 @@ function saveProject(journey) {
     createdAt: existing>=0 ? projects[existing].createdAt : new Date().toISOString()
   };
   if (existing>=0) projects[existing]=project; else projects.unshift(project);
+  _projectsCache = projects;
   localStorage.setItem('agencyos_projects', JSON.stringify(projects));
   updateProjectCount();
-  notify('Project saved ✓');
+  if (_sb) {
+    _sb.from('projects').upsert({ id: project.id, journey_key: project._journeyId, type: project.type, data: Object.assign({}, project.data, {_progress: project.progress, _stage: project.stage, _totalSteps: project.totalSteps}), responses: project.responses, current_step: project.currentStep, status: 'active', updated_at: new Date().toISOString() }, { onConflict: 'id' }).then(function(r){ if (r.error) console.warn('Supabase save error:', r.error); notify('Cloud sync failed — saved locally', 'warning'); });
+  }
+  notify('Project saved ✓', 'success');
+}
+
+// ── SUPABASE CONFIG ──
+var _SB_URL = 'https://yossieeqpgmvfuiiwcbl.supabase.co';
+var _SB_KEY = window._supaKey;
+var _sb = null;
+var _projectsCache = [];
+
+function initSupabase() {
+  try {
+    if (typeof supabase !== 'undefined' && window._supaKey) {
+      _sb = supabase.createClient(_SB_URL, window._supaKey);
+      var dot = document.getElementById('sb-dot'); var txt = document.getElementById('sb-status-text');
+      if (dot) { dot.classList.add('connected'); } if (txt) { txt.textContent = 'Supabase Live'; }
+      loadFromSupabase();
+    }
+  } catch(e) { console.warn('Supabase init failed:', e); }
+}
+
+async function loadFromSupabase() {
+  if (!_sb) return;
+  try {
+    var res = await _sb.from('projects').select('*').order('updated_at', { ascending: false });
+    if (res.error) throw res.error;
+    if (res.data && res.data.length > 0) {
+      _projectsCache = res.data.map(function(row) {
+        return {
+          id: row.id, _journeyId: row.journey_key || row.id,
+          type: row.type,
+          client: (row.data && (row.data.brief || row.data.setup || row.data.format || {})).client || (row.data && (row.data.brief || row.data.setup || row.data.format || {})).writer || '—',
+          name: (row.data && (row.data.brief || row.data.setup || row.data.format || {})).project || (row.data && (row.data.brief || row.data.setup || row.data.format || {})).title || 'Project',
+          industry: (row.data && (row.data.brief || row.data.setup || row.data.format || {})).industry || '—',
+          currentStep: row.current_step || 0, totalSteps: row.data && row.data._totalSteps || 6,
+          progress: row.data && row.data._progress || 0, stage: row.data && row.data._stage || 'Active',
+          data: row.data || {}, responses: row.responses || {},
+          updatedAt: row.updated_at, createdAt: row.created_at
+        };
+      });
+      localStorage.setItem('agencyos_projects', JSON.stringify(_projectsCache));
+      updateProjectCount(); refreshDashboard();
+    } else {
+      _projectsCache = JSON.parse(localStorage.getItem('agencyos_projects') || '[]');
+    }
+  } catch(e) {
+    console.warn('Supabase load failed:', e);
+    _projectsCache = JSON.parse(localStorage.getItem('agencyos_projects') || '[]');
+  }
 }
 
 function getProjects() {
-  try { return JSON.parse(localStorage.getItem('agencyos_projects') || '[]'); } catch { return []; }
+  if (_projectsCache.length === 0) {
+    try { _projectsCache = JSON.parse(localStorage.getItem('agencyos_projects') || '[]'); } catch(e) { _projectsCache = []; }
+  }
+  return _projectsCache;
 }
 
 function loadProject(id) {
@@ -1230,6 +1420,18 @@ function loadProject(id) {
   notify(`Loaded: ${p.client} — ${p.name}`);
 }
 
+function deleteProject(id, evt) {
+  if (evt) { evt.stopPropagation(); }
+  if (!confirm("Delete this project? This cannot be undone.")) return;
+  var projects = getProjects().filter(function(p){ return p.id !== id; });
+  _projectsCache = projects;
+  localStorage.setItem("agencyos_projects", JSON.stringify(projects));
+  if (_sb) { _sb.from("projects").delete().eq("id", id).then(function(r){ if (r.error) console.warn("Supabase delete error:", r.error); }); }
+  updateProjectCount();
+  refreshDashboard();
+  refreshProjectsPage();
+  notify("Project deleted", "warning");
+}
 function updateProjectCount() {
   const count = getProjects().length;
   document.getElementById('projects-count').textContent = count;
@@ -1278,7 +1480,8 @@ function projectRowHTML(p) {
       <div class="pr-progress-bar"><div class="pr-progress-fill" style="width:${p.progress}%"></div></div>
       <div class="pr-progress-label">${p.progress}%</div>
     </div>
-  </div>`;
+  <button class="pr-del" onclick="deleteProject('${p.id}',event)" title="Delete project">🗑</butto
+</div>`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1483,6 +1686,102 @@ document.addEventListener('DOMContentLoaded', () => {
   const greet = h<12?'Good morning 👋':h<17?'Good afternoon 👋':'Good evening 👋';
   document.querySelector('#page-dashboard .page-header h1').textContent = greet;
 });
+
+// Ctrl+S / Cmd+S — save current journey
+document.addEventListener("keydown", function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+    e.preventDefault();
+    var activePage = document.querySelector(".page.active");
+    if (activePage) {
+      var pageId = activePage.id.replace("page-", "");
+      if (["atl","btl","audit","script","integrated"].indexOf(pageId) !== -1) {
+        saveProject(pageId);
+      }
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// PIPELINE MODULE — Render Job Queue + DaVinci Integration
+// ═══════════════════════════════════════════════════════
+
+var _pipelineLoaded = false;
+
+function pipelineEnvCheck() {
+  var ffmpegEl = document.getElementById("env-ffmpeg-val");
+  var ffmpegStatus = document.getElementById("env-ffmpeg-status");
+  // In a full implementation this calls a local API. For now show install guide.
+  notify("Run: npm run check — in your terminal from the pipeline/ folder", "info");
+  if (ffmpegEl) ffmpegEl.textContent = "Run: brew install ffmpeg";
+}
+
+async function loadPipelineJobs() {
+  var el = document.getElementById("pipeline-jobs-list");
+  if (!el) return;
+  if (!_sb) { el.innerHTML = '<div class="pipeline-empty"><span class="pe-icon">⚡</span><p>Supabase not connected — check console.</p></div>'; return; }
+  try {
+    var result = await _sb.from("pipeline_jobs").select("*").order("created_at", { ascending: false }).limit(20);
+    var jobs = result.data || [];
+    if (!jobs.length) {
+      el.innerHTML = '<div class="pipeline-empty"><span class="pe-icon">🎬</span><p>No jobs yet. Queue a render job to get started.</p></div>';
+      return;
+    }
+    el.innerHTML = jobs.map(function(j) {
+      var badge = "jb-" + j.status;
+      var res = (j.width && j.height) ? (j.width + "×" + j.height) : "—";
+      var dt = j.created_at ? new Date(j.created_at).toLocaleDateString("en-ZA") : "—";
+      return [
+        '<div class="job-row">',
+        '<div><div class="job-comp">' + j.composition + '</div><div class="job-meta">' + (j.metadata && j.metadata.label ? j.metadata.label : j.id.slice(0,8)) + '</div></div>',
+        '<div><span class="job-badge ' + badge + '">' + j.status + '</span></div>',
+        '<div style="font-size:12px;color:var(--muted)">' + res + '</div>',
+        '<div style="font-size:12px;color:var(--muted)">' + dt + '</div>',
+        '<div></div>',
+        '</div>'
+      ].join("");
+    }).join("");
+  } catch(e) {
+    el.innerHTML = '<div class="pipeline-empty"><span class="pe-icon">❌</span><p>Failed to load jobs: ' + e.message + '</p></div>';
+  }
+}
+
+async function queueRenderJob() {
+  var comp = (document.getElementById("qr-composition") || {}).value || "TestCard";
+  var res = (document.getElementById("qr-resolution") || {}).value || "1920x1080";
+  var label = (document.getElementById("qr-label") || {}).value || "";
+  var parts = res.split("x");
+  var width = parseInt(parts[0]) || 1920;
+  var height = parseInt(parts[1]) || 1080;
+  if (!_sb) { notify("Supabase not connected", "error"); return; }
+  try {
+    var result = await _sb.from("pipeline_jobs").insert({
+      composition: comp,
+      payload: {},
+      status: "queued",
+      width: width,
+      height: height,
+      fps: 30,
+      metadata: { label: label }
+    }).select("id").single();
+    if (result.error) throw result.error;
+    notify("Job queued: " + comp + " — " + res, "success");
+    if (document.getElementById("qr-label")) document.getElementById("qr-label").value = "";
+    loadPipelineJobs();
+  } catch(e) {
+    notify("Failed to queue job: " + e.message, "error");
+  }
+}
+
+// Auto-load pipeline jobs when pipeline page is navigated to
+var _origNavigate = navigate;
+navigate = function(page) {
+  _origNavigate(page);
+  if (page === "pipeline" && !_pipelineLoaded) {
+    _pipelineLoaded = true;
+    loadPipelineJobs();
+  }
+};
 </script>
+
 </body>
 </html>
