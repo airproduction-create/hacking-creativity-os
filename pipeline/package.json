@@ -1,0 +1,36 @@
+{
+  "name": "hacking-creativity-pipeline",
+  "version": "1.0.0",
+  "description": "Automated video production engine for Hacking Creativity OS",
+  "type": "module",
+  "scripts": {
+    "start": "npx remotion studio",
+    "build": "npx remotion render",
+    "render": "node scripts/render/render-job.js",
+    "render:all": "node scripts/render/batch-render.js",
+    "check": "node scripts/render/env-check.js",
+    "davinci:sync": "python3 scripts/davinci/sync-timeline.py",
+    "davinci:export": "python3 scripts/davinci/batch-export.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/player": "^4.0.0",
+    "@remotion/media-utils": "^4.0.0",
+    "remotion": "^4.0.0",
+    "framer-motion": "^11.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

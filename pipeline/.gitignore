@@ -1,0 +1,25 @@
+# Environment — never commit
+.env
+.env.local
+.env.*.local
+
+# Render outputs
+output/*.mp4
+output/*.mov
+output/*.mxf
+output/batch-manifest_*.json
+
+# Node
+node_modules/
+dist/
+.cache/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# macOS
+.DS_Store
